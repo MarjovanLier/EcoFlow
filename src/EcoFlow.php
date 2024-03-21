@@ -55,7 +55,7 @@ class EcoFlow
     /**
      * Flatten a multi-dimensional array into a single level array.
      *
-     * @param array<string, array<string, int|string>|string>|array<string, int|string> $data
+     * @param array<string|int, array<string, int|string>|string>|array<string, int|string> $data
      *
      * @return array<string, int|string>
      */
@@ -64,7 +64,11 @@ class EcoFlow
         $flattened = [];
 
         foreach ($data as $key => $value) {
+            if ($key === 0) {
+                $key = '';
+            }
             $newKey = $prefix === '' ? $key : sprintf('%s.%s', $prefix, $key);
+            $newKey = rtrim($newKey, '.');
 
             if (is_array($value)) {
                 // Recursive call for nested arrays.
@@ -157,8 +161,6 @@ class EcoFlow
         $response = $this->makeRequest($url, 'GET', $headers, $params);
 
         if ($response['code'] === '0') {
-            echo "All quota information:\n";
-
             $data = $response['data'];
 
             ksort($data, SORT_STRING);
@@ -246,14 +248,14 @@ class EcoFlow
         $response = $this->makeRequest($url, 'POST', $headers, $data);
 
         if (isset($response['code']) && $response['code'] === '0') {
-            return 'Supply priority set successfully.';
+            return 'Supply priority retrieved successfully.';
         }
 
         if (isset($response['message'])) {
-            return 'Error setting supply priority: ' . $response['message'];
+            return 'Error getting supply priority: ' . json_encode($response);
         }
 
-        return 'Something went wrong';
+        return 'Something went wrong. '.\json_encode($response);
     }
 
 

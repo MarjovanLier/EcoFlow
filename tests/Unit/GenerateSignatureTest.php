@@ -56,4 +56,25 @@ final class GenerateSignatureTest extends TestCase
 
         self::assertEquals($expectedFlattenData, $flattenData);
     }
+
+
+    public function testGenerateFlattenData2(): void
+    {
+        $data = [
+            'params' => [
+                'quotas' => ['20_1.supplyPriority']
+            ],
+            'sn' => '123456789',
+        ];
+
+        $ecoFlow = new EcoFlow('', '');
+        $expectedFlattenData = [
+            'params.quotas' => '20_1.supplyPriority',
+            'sn' => '123456789',
+        ];
+
+        $flattenData = $ecoFlow->flattenData($data);
+
+        self::assertEquals($expectedFlattenData, $flattenData);
+    }
 }
