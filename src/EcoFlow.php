@@ -243,7 +243,7 @@ class EcoFlow
             'timestamp' => $timestamp,
         ];
 
-        $response = $this->makeRequest($url, 'PUT', $headers, $data);
+        $response = $this->makeRequest($url, 'POST', $headers, $data);
 
         if (isset($response['code']) && $response['code'] === '0') {
             return 'Supply priority set successfully.';
