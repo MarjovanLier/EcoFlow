@@ -7,21 +7,27 @@ namespace MarjovanLier\EcoFlow;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use JsonException;
 use Random\RandomException;
 use RuntimeException;
 use SensitiveParameter;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
-class EcoFlow
+readonly class EcoFlow
 {
     /**
      * Create __constructor.
      */
     public function __construct(
         #[SensitiveParameter]
-        private readonly string $accessKey,
+        private string $accessKey,
         #[SensitiveParameter]
-        private readonly string $secretKey
+        private string $secretKey
     ) {}
 
 
@@ -55,9 +61,9 @@ class EcoFlow
     /**
      * Flatten a multi-dimensional array into a single level array.
      *
-     * @param array<string|int, array<string, int|string>|string>|array<string, int|string> $data
+     * @param array<int|string, array<int|string, array<int, string>|int|string>|string>|array<string, int|string> $data
      *
-     * @return array<string, int|string>
+     * @return array<int|string, int|string>
      */
     public function flattenData(array $data, string $prefix = ''): array
     {
@@ -67,8 +73,9 @@ class EcoFlow
             if ($key === 0) {
                 $key = '';
             }
+
             $newKey = $prefix === '' ? $key : sprintf('%s.%s', $prefix, $key);
-            $newKey = rtrim($newKey, '.');
+            $newKey = is_string($newKey) ? rtrim($newKey, '.') : (string) $newKey;
 
             if (is_array($value)) {
                 // Recursive call for nested arrays.
@@ -96,6 +103,13 @@ class EcoFlow
      *      eagleEyeTraceId: string,
      *      tid: string
      *  }
+     *
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws JsonException
+     * @throws TransportExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
      */
     public function makeRequest(
         string $url,
@@ -133,6 +147,10 @@ class EcoFlow
 
     /**
      * @return array<string, array<string, array<string, int>|int|string>|int|string>
+     *
+     * @throws DecodingExceptionInterface|Exception|JsonException|RandomException|TransportExceptionInterface
+     *
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function getAllQuotaInfo(string $deviceSN): array
     {
@@ -175,7 +193,7 @@ class EcoFlow
     /**
      * @param array<string, int|string> $params
      *
-     * @throws RandomException
+     * @throws DecodingExceptionInterface|Exception|RandomException|TransportExceptionInterface
      *
      * @psalm-suppress PossiblyUnusedMethod
      */
@@ -218,11 +236,17 @@ class EcoFlow
     /**
      * @param array<string, int|string> $params
      *
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws JsonException
      * @throws RandomException
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
      *
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function getParams(string $deviceSN, $params = []): string
+    public function getParams(string $deviceSN, array $params = []): string
     {
         $nonce = $this->createNonce();
         $timestamp = $this->createTimestamp();
@@ -252,10 +276,10 @@ class EcoFlow
         }
 
         if (isset($response['message'])) {
-            return 'Error getting supply priority: ' . json_encode($response);
+            return 'Error getting supply priority: ' . json_encode($response, JSON_THROW_ON_ERROR);
         }
 
-        return 'Something went wrong. '.\json_encode($response);
+        return 'Something went wrong. ' . json_encode($response, JSON_THROW_ON_ERROR);
     }
 
 
@@ -273,6 +297,8 @@ class EcoFlow
      * }
      *
      * @psalm-suppress PossiblyUnusedMethod
+     *
+     * @throws DecodingExceptionInterface|Exception|RandomException|TransportExceptionInterface
      */
     public function getDevices(): array
     {
